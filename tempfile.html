@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Futuristic Layout with Gamified Timers</title>
+    <!-- Tailwind CSS for utility classes -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts: Inter, Dancing Script, and Nunito for the timer -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&family=Dancing+Script:wght@700&family=Nunito:wght@600;800&display=swap" rel="stylesheet">
+    <style>
+        /* Custom styles for the futuristic look */
+        :root {
+            --sidebar-width: 240px;
+            --sidebar-width-minimized: 80px;
+            --bg-color: #000000;
+            --sidebar-bg: #000000;
+            --text-primary: #E0E0E0;
+            --text-secondary: #a0a0c0;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --hover-bg: rgba(255, 255, 255, 0.05);
+            --grid-border-color: #00FFC2;
+            --pink-color: #FF00FF;
+            --red-color: #FF4136;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            overflow-x: hidden;
+        }
+
+        .main-layout { 
+            display: flex; 
+            min-height: 100vh;
+            position: relative; 
+            z-index: 1; 
+        }
+        .sidebar { 
+            width: var(--sidebar-width); 
+            height: 100vh; 
+            background: var(--sidebar-bg); 
+            padding: 0.75rem; 
+            display: flex; 
+            flex-direction: column; 
+            transition: width 0.3s ease; 
+            flex-shrink: 0; 
+            border-right: 1px solid var(--border-color);
+            position: sticky;
+            top: 0;
+        }
+        .sidebar-header { display: flex; align-items: center; justify-content: space-between; padding: 0.5rem; margin-bottom: 1rem; overflow: hidden; height: 56px; }
+        .sidebar-toggle { cursor: pointer; padding: 0.5rem; border-radius: 0.5rem; border: 1px solid transparent; transition: border-color 0.2s ease; }
+        .sidebar-toggle:hover { background: var(--hover-bg); border-color: var(--border-color); }
+        .hamburger-icon { width: 24px; height: 24px; display: flex; flex-direction: column; justify-content: space-around; }
+        .hamburger-icon span { display: block; width: 100%; height: 2px; background-color: var(--text-secondary); border-radius: 1px; transition: all 0.3s ease-in-out; }
+        .sidebar-toggle:hover .hamburger-icon span { background-color: #ffffff; }
+        .nav-links { flex-grow: 1; overflow-y: auto; overflow-x: hidden; }
+        .nav-links ul { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 0.25rem; }
+        .nav-links a { display: flex; align-items: center; gap: 0.75rem; padding: 0.6rem; border-radius: 0.5rem; text-decoration: none; color: var(--text-primary); font-weight: 500; font-size: 0.9rem; transition: all 0.2s ease; white-space: nowrap; }
+        .nav-links svg { width: 24px; height: 24px; stroke: #ffffff; transition: all 0.2s ease; flex-shrink: 0; }
+        .sidebar-footer { padding: 0.75rem; border-top: 1px solid var(--border-color); }
+        .logo-wrapper { display: flex; align-items: center; gap: 0.75rem; }
+        .profile-pic { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
+        .sidebar.minimized { width: var(--sidebar-width-minimized); }
+        .sidebar.minimized .nav-links span, .sidebar.minimized .sidebar-footer span, .sidebar.minimized .sidebar-header .logo-wrapper { display: none; }
+        .sidebar.minimized .sidebar-header { justify-content: center; }
+        .sidebar.minimized .nav-links a { justify-content: center; }
+        .sidebar.minimized .hamburger-icon span:nth-child(1) { transform: translateY(8px) rotate(45deg); }
+        .sidebar.minimized .hamburger-icon span:nth-child(2) { opacity: 0; }
+        .sidebar.minimized .hamburger-icon span:nth-child(3) { transform: translateY(-8px) rotate(-45deg); }
+        .main-content { 
+            flex-grow: 1; 
+            position: relative; 
+            display: flex; 
+            flex-direction: column; 
+            padding: 2rem 0.5rem; 
+        }
+        .content-wrapper { 
+            display: flex; 
+            align-items: flex-start;
+            gap: 1rem; 
+            width: 100%; 
+        }
+        .vertical-title { font-family: 'Dancing Script', cursive; font-size: 3rem; color: var(--grid-border-color); writing-mode: vertical-rl; transform: rotate(180deg); white-space: nowrap; }
+        .top-bar-profile { position: absolute; top: 20px; right: 20px; z-index: 10; }
+        .study-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 1rem; 
+            width: 100%; 
+            flex-grow: 1; 
+        }
+        
+        .study-block {
+            border: 2px solid var(--grid-border-color);
+            border-radius: 16px;
+            aspect-ratio: 1 / 1;
+            cursor: pointer;
+            transition: background-color 0.3s ease, border-color 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem;
+            text-align: center;
+            font-family: 'Nunito', sans-serif;
+            font-weight: 800;
+            font-size: 1rem;
+            word-break: break-word;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .study-block[data-state="running"] { border-color: var(--pink-color); background-color: rgba(255, 0, 255, 0.1); }
+        .study-block[data-state="paused"] { border-color: var(--pink-color); background-color: rgba(255, 0, 255, 0.05); }
+        
+        /* --- Gamified Completion Tier Styles --- */
+        .completed-bronze { border-color: var(--red-color); background-color: var(--red-color); color: #fff; }
+        .completed-silver { border-color: #A7C7E7; background: linear-gradient(145deg, #A7C7E7, #7192B3); color: #fff; box-shadow: 0 0 20px #A7C7E780; }
+        .completed-gold { border-color: #FFD700; background: linear-gradient(145deg, #FFD700, #FFAA00); color: #000; font-weight: 900; box-shadow: 0 0 25px #FFD70080; }
+        .completed-diamond { border-color: #b9f2ff; background: linear-gradient(145deg, #b9f2ff, #33AADD, #9D63E5); color: #fff; animation: diamond-shine 4s infinite alternate; box-shadow: 0 0 30px #b9f2ff80; background-size: 200% 200%; }
+
+        @keyframes diamond-shine {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+
+        .subject-name { font-size: 0.9rem; line-height: 1.2; }
+        .timer-display { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+        .completed-bronze .timer-display, .completed-silver .timer-display, .completed-diamond .timer-display { color: #fff; }
+        .completed-gold .timer-display { color: #000; }
+
+        .study-block.countdown-active {
+            justify-content: center; align-items: center; font-size: 5rem; font-weight: 800; color: var(--pink-color); padding: 0;
+        }
+
+        /* --- Gamified Completion Animation --- */
+        .completion-animation { position: absolute; top: 0; left: 0; right: 0; bottom: 0; pointer-events: none; }
+        .fire-emoji, .sparkle-emoji, .firework-emoji, .rocket-emoji { position: absolute; bottom: -40px; animation: float-up 3s ease-out forwards; }
+        .streak-message { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); color: white; font-size: 1.2rem; font-weight: 800; text-shadow: 0 0 10px black; opacity: 0; animation: fade-in-out 3s ease-in-out; }
+
+        @keyframes float-up {
+            to { bottom: 120%; opacity: 0; transform: scale(1.5) rotate(30deg); }
+        }
+        @keyframes fade-in-out {
+            0%, 100% { opacity: 0; }
+            25%, 75% { opacity: 1; }
+        }
+
+        /* Modal Styles */
+        .modal-overlay { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0, 0, 0, 0.7); backdrop-filter: blur(5px); z-index: 100; display: flex; align-items: center; justify-content: center; opacity: 0; visibility: hidden; transition: opacity 0.3s, visibility 0.3s; }
+        .modal-overlay.visible { opacity: 1; visibility: visible; }
+        .modal-window { background: rgba(10, 12, 28, 0.8); border: 2px solid var(--grid-border-color); border-radius: 16px; padding: 2rem; width: 90%; max-width: 400px; box-shadow: 0 0 30px rgba(0, 255, 194, 0.3); text-align: center; }
+        .modal-title { font-family: 'Nunito', sans-serif; font-size: 1.5rem; font-weight: 800; color: var(--grid-border-color); margin-bottom: 1.5rem; }
+        .modal-input { width: 100%; background: rgba(255, 255, 255, 0.05); border: 1px solid var(--border-color); border-radius: 8px; padding: 0.75rem 1rem; color: var(--text-primary); font-size: 1rem; margin-bottom: 1.5rem; }
+        .modal-buttons { display: flex; gap: 1rem; justify-content: center; }
+        .modal-btn { padding: 0.75rem 1.5rem; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; transition: transform 0.2s, box-shadow 0.2s; }
+        .modal-btn:hover { transform: translateY(-2px); }
+        .btn-confirm { background-color: var(--grid-border-color); color: #000; box-shadow: 0 0 15px rgba(0, 255, 194, 0.4); }
+        .btn-cancel { background-color: rgba(255, 255, 255, 0.1); color: var(--text-primary); }
+        .btn-yes { background-color: var(--red-color); color: #fff; box-shadow: 0 0 15px rgba(255, 65, 54, 0.4); }
+        
+        @media (max-width: 768px) { .sidebar { position: absolute; z-index: 20; } .sidebar:not(.minimized) { width: var(--sidebar-width); } .sidebar.minimized { width: var(--sidebar-width-minimized); } .top-bar-profile { position: relative; top: 0; right: 0; width: 100%; margin-bottom: 1rem; justify-content: flex-end; display: flex; } .study-block.countdown-active { font-size: 3.5rem; } }
+
+    </style>
+</head>
+<body>
+    <div class="main-layout" id="main-layout">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar minimized" id="sidebar">
+            <div class="sidebar-header">
+                <div class="logo-wrapper"><img src="https://placehold.co/40x40/0a0c1c/ffffff?text=S" alt="Logo" class="profile-pic"></div>
+                <button class="sidebar-toggle" id="sidebar-toggle"><div class="hamburger-icon"><span></span><span></span><span></span></div></button>
+            </div>
+            <div class="nav-links">
+                <ul>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Dashboard</span></a></li>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>Pomodoro</span></a></li>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg><span>Calendar</span></a></li>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg><span>To-Do Grid</span></a></li>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20v-6m0-4V4m6 16v-2m0-4V4m-6 16v-4m0-4V4"/></svg><span>Insights</span></a></li>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/></svg><span>About</span></a></li>
+                    <li><a href="#"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg><span>Settings</span></a></li>
+                </ul>
+            </div>
+            <div class="sidebar-footer"><a href="#"><div class="logo-wrapper"><img src="https://placehold.co/40x40/0a0c1c/ffffff?text=P" alt="Profile Picture" class="profile-pic"><span>Soumya</span></div></a></div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <div class="top-bar-profile"><a href="#"><div class="logo-wrapper"><img src="https://placehold.co/40x40/0a0c1c/ffffff?text=P" alt="Profile Picture" class="profile-pic"><span>Soumya</span></div></a></div>
+            <div class="content-wrapper">
+                <h2 class="vertical-title">To do Grid</h2>
+                <div class="study-grid" id="study-grid"></div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Modal for user input -->
+    <div class="modal-overlay" id="modal-overlay">
+        <div class="modal-window">
+            <h3 class="modal-title" id="modal-title">Name Your Subject</h3>
+            <div id="modal-input-container">
+                <input type="text" id="subject-input" class="modal-input" placeholder="e.g., Physics Chapter 3">
+            </div>
+            <div class="modal-buttons" id="modal-buttons">
+                <!-- Buttons are generated by JS -->
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- DOM Elements ---
+        const sidebar = document.getElementById('sidebar');
+        const toggleButton = document.getElementById('sidebar-toggle');
+        const studyGrid = document.getElementById('study-grid');
+        const modalOverlay = document.getElementById('modal-overlay');
+        const modalTitle = document.getElementById('modal-title');
+        const modalInputContainer = document.getElementById('modal-input-container');
+        const subjectInput = document.getElementById('subject-input');
+        const modalButtons = document.getElementById('modal-buttons');
+
+        let activeBlock = null; // To keep track of which block was clicked
+
+        // --- Sidebar Toggle ---
+        toggleButton.addEventListener('click', () => sidebar.classList.toggle('minimized'));
+        
+        // --- Multi-color Hover Effect on Sidebar ---
+        const navLinks = document.querySelectorAll('.nav-links a, .sidebar-footer a');
+        const accentColors = ['#FF00FF', '#00FFFF', '#FFFF00', '#FF5733', '#7DFF33'];
+        navLinks.forEach(link => {
+            link.addEventListener('mouseover', () => {
+                const randomColor = accentColors[Math.floor(Math.random() * accentColors.length)];
+                link.style.backgroundColor = `${randomColor}26`;
+                const svg = link.querySelector('svg');
+                if (svg) svg.style.stroke = randomColor;
+            });
+            link.addEventListener('mouseout', () => {
+                link.style.backgroundColor = '';
+                const svg = link.querySelector('svg');
+                if (svg) svg.style.stroke = '';
+            });
+        });
+        
+        // --- Grid and Timer Logic ---
+        const formatTime = (totalSeconds) => {
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        };
+
+        const showModal = (mode) => {
+            modalButtons.innerHTML = '';
+            if (mode === 'name') {
+                modalTitle.textContent = 'Name Your Subject';
+                modalInputContainer.style.display = 'block';
+                subjectInput.value = '';
+                modalButtons.innerHTML = `<button class="modal-btn btn-confirm" id="confirm-name-btn">Okay</button><button class="modal-btn btn-cancel" id="cancel-btn">Cancel</button>`;
+                document.getElementById('confirm-name-btn').onclick = handleNameConfirm;
+                document.getElementById('cancel-btn').onclick = hideModal;
+            } else if (mode === 'complete') {
+                modalTitle.textContent = 'Are you sure you have completed your task?';
+                modalInputContainer.style.display = 'none';
+                modalButtons.innerHTML = `<button class="modal-btn btn-yes" id="yes-btn">Yes, I'm done!</button><button class="modal-btn btn-cancel" id="no-btn">Not yet</button>`;
+                document.getElementById('yes-btn').onclick = handleCompleteConfirm;
+                document.getElementById('no-btn').onclick = handleCompleteCancel;
+            }
+            modalOverlay.classList.add('visible');
+            if (mode === 'name') subjectInput.focus();
+        };
+        
+        const hideModal = () => modalOverlay.classList.remove('visible');
+
+        const showTieredCompletion = (block, tier) => {
+            // Reset classes and set the new tier class for styling
+            block.className = 'study-block';
+            block.classList.add(`completed-${tier}`);
+
+            const animationContainer = document.createElement('div');
+            animationContainer.className = 'completion-animation';
+
+            const message = document.createElement('div');
+            message.className = 'streak-message';
+
+            let emojis = [], emojiClass = '', msgText = '';
+
+            switch (tier) {
+                case 'silver':
+                    msgText = 'Great Focus!'; emojis = ['✨', '🌟']; emojiClass = 'sparkle-emoji'; break;
+                case 'gold':
+                    msgText = 'Awesome Session!'; emojis = ['🎆', '🎉', '🏆']; emojiClass = 'firework-emoji'; break;
+                case 'diamond':
+                    msgText = 'BEAST MODE!'; emojis = ['🚀', '⚡️', '👑']; emojiClass = 'rocket-emoji'; break;
+                default: // bronze
+                    msgText = 'Streak Added +1'; emojis = ['🔥']; emojiClass = 'fire-emoji'; break;
+            }
+            message.textContent = msgText;
+            animationContainer.appendChild(message);
+
+            for (let i = 0; i < 15; i++) {
+                const emoji = document.createElement('span');
+                emoji.className = emojiClass;
+                emoji.textContent = emojis[Math.floor(Math.random() * emojis.length)];
+                emoji.style.left = `${Math.random() * 90}%`;
+                emoji.style.animationDelay = `${Math.random() * 0.8}s`;
+                emoji.style.fontSize = `${1.5 + Math.random() * 1.5}rem`;
+                animationContainer.appendChild(emoji);
+            }
+
+            block.appendChild(animationContainer);
+            setTimeout(() => animationContainer.remove(), 3000);
+        };
+
+        const handleNameConfirm = () => {
+            const subjectName = subjectInput.value.trim();
+            if (subjectName && activeBlock) {
+                activeBlock.dataset.state = 'named';
+                activeBlock.dataset.subject = subjectName;
+                activeBlock.querySelector('.subject-name').textContent = subjectName;
+                hideModal();
+            }
+        };
+
+        const handleCompleteConfirm = () => {
+            if (activeBlock) {
+                const totalSeconds = parseInt(activeBlock.dataset.seconds);
+                
+                // Define thresholds in seconds
+                const silverThreshold = 30 * 60; // 30 min
+                const goldThreshold = 90 * 60;   // 1.5 hours
+                const diamondThreshold = 180 * 60; // 3 hours
+
+                let tier = 'bronze';
+                if (totalSeconds >= diamondThreshold) tier = 'diamond';
+                else if (totalSeconds >= goldThreshold) tier = 'gold';
+                else if (totalSeconds >= silverThreshold) tier = 'silver';
+                
+                activeBlock.dataset.state = 'completed';
+                activeBlock.dataset.tier = tier;
+                showTieredCompletion(activeBlock, tier);
+                hideModal();
+            }
+        };
+
+        const handleCompleteCancel = () => {
+            // The block is already paused, so just hide the modal.
+            // The user can click it again to resume the timer.
+            hideModal();
+        };
+
+        studyGrid.addEventListener('click', (event) => {
+            const clickedBlock = event.target.closest('.study-block');
+            if (!clickedBlock) return;
+
+            activeBlock = clickedBlock;
+            const state = clickedBlock.dataset.state;
+
+            switch (state) {
+                case 'empty': showModal('name'); break;
+                case 'named': startCountdown(clickedBlock); break;
+                case 'running':
+                    clearInterval(parseInt(clickedBlock.dataset.intervalId));
+                    clickedBlock.dataset.state = 'paused';
+                    showModal('complete');
+                    break;
+                case 'paused': startTimer(clickedBlock); break;
+                case 'completed': break;
+            }
+        });
+
+        const startCountdown = (block) => {
+            block.dataset.state = 'countdown';
+            const originalContent = block.innerHTML;
+            block.innerHTML = '';
+            block.classList.add('countdown-active');
+
+            let count = 3;
+            const countdownInterval = setInterval(() => {
+                if (count > 0) {
+                    block.textContent = count;
+                    count--;
+                } else {
+                    clearInterval(countdownInterval);
+                    block.textContent = "Go!";
+                    setTimeout(() => {
+                        block.classList.remove('countdown-active');
+                        block.innerHTML = originalContent;
+                        block.querySelector('.subject-name').textContent = block.dataset.subject;
+                        startTimer(block);
+                    }, 1000);
+                }
+            }, 1000);
+        };
+
+        const startTimer = (block) => {
+            block.dataset.state = 'running';
+            const intervalId = setInterval(() => {
+                let totalSeconds = parseInt(block.dataset.seconds) + 1;
+                block.dataset.seconds = totalSeconds;
+                block.querySelector('.timer-display').textContent = formatTime(totalSeconds);
+            }, 1000);
+            block.dataset.intervalId = intervalId;
+        };
+
+        // --- Initialize Grid ---
+        for (let i = 0; i < 48; i++) {
+            const block = document.createElement('div');
+            block.classList.add('study-block');
+            block.dataset.state = 'empty';
+            block.dataset.seconds = '0';
+            block.dataset.subject = '';
+            block.dataset.intervalId = null;
+            block.dataset.tier = 'none';
+
+            block.innerHTML = `
+                <span class="subject-name">Empty</span>
+                <div class="timer-display">00:00:00</div>
+            `;
+            
+            studyGrid.appendChild(block);
+        }
+    </script>
+</body>
+</html>
